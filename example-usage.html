@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORS Proxy Example</title>
+</head>
+<body>
+    <h1>CORS Proxy Example</h1>
+    <button id="testProxy">Test Proxy</button>
+    <div id="result"></div>
+
+    <script>
+        // Replace with your actual Cloudflare Worker URL
+        const WORKER_URL = 'https://your-worker.your-subdomain.workers.dev';
+        
+        /**
+         * Fetch data through the CORS proxy
+         * @param {string} targetUrl - The URL you want to fetch
+         * @param {object} options - Fetch options (method, headers, body, etc.)
+         * @returns {Promise<Response>} - The proxied response
+         */
+        async function fetchThroughProxy(targetUrl, options = {}) {
+            const proxyUrl = `${WORKER_URL}/${targetUrl}`;
+            
+            try {
+                const response = await fetch(proxyUrl, {
+                    method: options.method || 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    body: options.body ? JSON.stringify(options.body) : null
+                });
+                
+                return response;
+            } catch (error) {
+                console.error('Proxy fetch error:', error);
+                throw error;
+            }
+        }
+
+        // Example usage
+        document.getElementById('testProxy').addEventListener('click', async () => {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Loading...';
+            
+            try {
+                // Example: Fetch data from JSONPlaceholder API through proxy
+                const response = await fetchThroughProxy('https://jsonplaceholder.typicode.com/posts/1');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML = `
+                        <h3>Success!</h3>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<p style="color: red;">Error: ${response.status} ${response.statusText}</p>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        });
+
+        // More examples of different HTTP methods
+        async function exampleUsages() {
+            // GET request
+            const getResponse = await fetchThroughProxy('https://api.example.com/data');
+            
+            // POST request
+            const postResponse = await fetchThroughProxy('https://api.example.com/create', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer your-token'
+                },
+                body: {
+                    name: 'John Doe',
+                    email: 'john@example.com'
+                }
+            });
+            
+            // PUT request
+            const putResponse = await fetchThroughProxy('https://api.example.com/update/123', {
+                method: 'PUT',
+                body: {
+                    name: 'Jane Doe'
+                }
+            });
+            
+            // DELETE request
+            const deleteResponse = await fetchThroughProxy('https://api.example.com/delete/123', {
+                method: 'DELETE'
+            });
+        }
+    </script>
+</body>
+</html>
